@@ -135,7 +135,6 @@ bool ClassFlowMQTT::doFlow(string zwtime)
 
     std::string result;
     std::string resulterror = "";
-    std::string resultraw = "";
     std::string resultrate = "";
     std::string resulttimestamp = "";
     string zw = "";
@@ -160,9 +159,8 @@ bool ClassFlowMQTT::doFlow(string zwtime)
         for (int i = 0; i < (*NUMBERS).size(); ++i)
         {
             result =  (*NUMBERS)[i]->ReturnValueNoError;
-            resultraw =  (*NUMBERS)[i]->ReturnRawValue;
             resulterror = (*NUMBERS)[i]->ErrorMessageText;
-            resultrate = (*NUMBERS)[i]->ReturnRateValue;
+            resultrate = std::to_string((*NUMBERS)[i]->FlowRateAct);
             resulttimestamp = (*NUMBERS)[i]->timeStamp;
 
             namenumber = (*NUMBERS)[i]->name;
@@ -171,40 +169,22 @@ bool ClassFlowMQTT::doFlow(string zwtime)
             else
                 namenumber = maintopic + "/" + namenumber + "/";
 
-            zw = namenumber + "value"; 
-            if (result.length() > 0)   
-                MQTTPublish(zw, result);
+            zw = namenumber + "value";    
+            MQTTPublish(zw, result);
 
-            zw = namenumber + "error"; 
-            if (resulterror.length() > 0)  
-                MQTTPublish(zw, resulterror, 1);
+            zw = namenumber + "error";    
+            MQTTPublish(zw, resulterror, 1);
 
-            zw = namenumber + "rate"; 
-            if (resultrate.length() > 0)   
-                MQTTPublish(zw, resultrate);
-
-            zw = namenumber + "raw"; 
-            if (resultraw.length() > 0)   
-                MQTTPublish(zw, resultraw);
+            zw = namenumber + "rate";    
+            MQTTPublish(zw, resultrate);
 
             zw = namenumber + "timestamp";
-            if (resulttimestamp.length() > 0)
-                MQTTPublish(zw, resulttimestamp);
+            MQTTPublish(zw, resulttimestamp);
 
 
-            std::string json = "";
-            
-            if (result.length() > 0)
-                json += "{\"value\":"+result;
-            else
-                json += "{\"value\":\"\"";
-
-            json += ",\"raw\":\""+resultraw;
-            json += "\",\"error\":\""+resulterror;
-            if (resultrate.length() > 0)
-                json += "\",\"rate\":"+resultrate;
-            else
-                json += "\",\"rate\":\"\"";
+            std::string json="{\"value\":"+result;
+            json += ",\"error\":\""+resulterror;
+            json += "\",\"rate\":"+resultrate;
             json += ",\"timestamp\":\""+resulttimestamp+"\"}";
 
             zw = namenumber + "json";

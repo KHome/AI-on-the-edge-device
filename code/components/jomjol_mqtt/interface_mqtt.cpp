@@ -111,20 +111,10 @@ void MQTTInit(std::string _mqttURI, std::string _clientid, std::string _user, st
     };
 
     client = esp_mqtt_client_init(&mqtt_cfg);
-    if (client)
-    {
-        if (esp_mqtt_client_register_event(client, esp_mmqtt_ID, mqtt_event_handler, client) != ESP_OK)
-            LogFile.WriteToFile("MQTT - Could not register event!");
-        if (esp_mqtt_client_start(client) != ESP_OK)
-            LogFile.WriteToFile("MQTT - Could not start client!");
+    esp_mqtt_client_register_event(client, esp_mmqtt_ID, mqtt_event_handler, client);
+    esp_mqtt_client_start(client);
 
-        MQTTPublish(_LWTContext, "", 1);
-    }
-    else
-    {
-        LogFile.WriteToFile("MQTT - Could not Init MQTT Client!");
-    }
-
+    MQTTPublish(_LWTContext, "", 1);
 }
 
 void MQTTdestroy() {

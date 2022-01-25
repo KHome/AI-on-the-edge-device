@@ -11,7 +11,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "sccb.h"
-#include "sensor.h"
 #include <stdio.h>
 #include "sdkconfig.h"
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
@@ -37,10 +36,12 @@ const int SCCB_I2C_PORT         = 1;
 #else
 const int SCCB_I2C_PORT         = 0;
 #endif
+static uint8_t ESP_SLAVE_ADDR   = 0x3c;
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
-    ESP_LOGI(TAG, "pin_sda %d pin_scl %d", pin_sda, pin_scl);
+    ESP_LOGI(TAG, "pin_sda %d pin_scl %d\n", pin_sda, pin_scl);
+    //log_i("SCCB_Init start");
     i2c_config_t conf;
     memset(&conf, 0, sizeof(i2c_config_t));
     conf.mode = I2C_MODE_MASTER;
@@ -55,30 +56,10 @@ int SCCB_Init(int pin_sda, int pin_scl)
     return 0;
 }
 
-int SCCB_Deinit(void)
-{
-    return i2c_driver_delete(SCCB_I2C_PORT);
-}
-
-uint8_t SCCB_Probe(void)
+uint8_t SCCB_Probe()
 {
     uint8_t slave_addr = 0x0;
-    // for (size_t i = 1; i < 0x80; i++) {
-    //     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    //     i2c_master_start(cmd);
-    //     i2c_master_write_byte(cmd, ( i << 1 ) | WRITE_BIT, ACK_CHECK_EN);
-    //     i2c_master_stop(cmd);
-    //     esp_err_t ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
-    //     i2c_cmd_link_delete(cmd);
-    //     if( ret == ESP_OK) {
-    //         ESP_LOGW(TAG, "Found I2C Device at 0x%02X", i);
-    //     }
-    // }
-    for (size_t i = 0; i < CAMERA_MODEL_MAX; i++) {
-        if (slave_addr == camera_sensor[i].sccb_addr) {
-            continue;
-        }
-        slave_addr = camera_sensor[i].sccb_addr;
+    while(slave_addr < 0x7f) {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         i2c_master_start(cmd);
         i2c_master_write_byte(cmd, ( slave_addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
@@ -86,10 +67,12 @@ uint8_t SCCB_Probe(void)
         esp_err_t ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
         i2c_cmd_link_delete(cmd);
         if( ret == ESP_OK) {
-            return slave_addr;
+            ESP_SLAVE_ADDR = slave_addr;
+            return ESP_SLAVE_ADDR;
         }
+        slave_addr++;
     }
-    return 0;
+    return ESP_SLAVE_ADDR;
 }
 
 uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)

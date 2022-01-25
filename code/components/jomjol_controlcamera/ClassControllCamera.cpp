@@ -73,19 +73,19 @@ static camera_config_t camera_config = {
     .pin_pclk = CAM_PIN_PCLK,
 
     //XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
-    .xclk_freq_hz = 20000000,             // Orginalwert
-//    .xclk_freq_hz =    5000000,               // Test, um die Bildfehler los zu werden !!!!
+//    .xclk_freq_hz = 20000000,             // Orginalwert
+    .xclk_freq_hz = 5000000,               // Test, um die Bildfehler los zu werden !!!!
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG, //YUV422,GRAYSCALE,RGB565,JPEG
     .frame_size = FRAMESIZE_VGA,    //QQVGA-UXGA Do not use sizes above QVGA when not JPEG
 //    .frame_size = FRAMESIZE_UXGA,    //QQVGA-UXGA Do not use sizes above QVGA when not JPEG
-    .jpeg_quality = 5, //0-63 lower number means higher quality
-    .fb_count = 1,       //if more than one, i2s runs in continuous mode. Use only with JPEG
-//    .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
-    .grab_mode = CAMERA_GRAB_LATEST,
+
     
+
+    .jpeg_quality = 5, //0-63 lower number means higher quality
+    .fb_count = 1       //if more than one, i2s runs in continuous mode. Use only with JPEG
 };
 
 
@@ -229,8 +229,6 @@ void CCamera::EnableAutoExposure(int flashdauer)
     vTaskDelay( xDelay );
 
     camera_fb_t * fb = esp_camera_fb_get();
-    esp_camera_fb_return(fb);
-    fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAGCAMERACLASS, "Camera Capture Failed");
         LEDOnOff(false);
@@ -277,16 +275,10 @@ esp_err_t CCamera::CaptureToBasisImage(CImageBasis *_Image, int delay)
 #endif
 
     camera_fb_t * fb = esp_camera_fb_get();
-    esp_camera_fb_return(fb);        
-    fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAGCAMERACLASS, "CaptureToBasisImage: Camera Capture Failed");
         LEDOnOff(false);
         LightOnOff(false);
-
-        LogFile.SwitchOnOff(true);
-        LogFile.WriteToFile("Camera is not working anymore - most propably hardware problem (instablility, ...). "
-                "System will reboot.");
         doReboot();
 
         return ESP_FAIL;
@@ -294,12 +286,6 @@ esp_err_t CCamera::CaptureToBasisImage(CImageBasis *_Image, int delay)
 
     int _size = fb->len;
     zwischenspeicher = (uint8_t*) malloc(_size);
-    if (!zwischenspeicher)
-    {
-        ESP_LOGE(TAGCAMERACLASS, "Nicht ausreichend Speicherplatz für Bild in Funktion CaptureToBasisImage()");
-        LogFile.SwitchOnOff(true);
-        LogFile.WriteToFile("Nicht ausreichend Speicherplatz für Bild in Funktion CaptureToBasisImage()");
-    }
     for (int i = 0; i < _size; ++i)
         *(zwischenspeicher + i) = *(fb->buf + i);
     esp_camera_fb_return(fb);        
@@ -376,8 +362,6 @@ esp_err_t CCamera::CaptureToFile(std::string nm, int delay)
     }
 
     camera_fb_t * fb = esp_camera_fb_get();
-    esp_camera_fb_return(fb);
-    fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAGCAMERACLASS, "CaptureToFile: Camera Capture Failed");
         LEDOnOff(false);
@@ -469,8 +453,6 @@ esp_err_t CCamera::CaptureToHTTP(httpd_req_t *req, int delay)
     }
 
 
-    fb = esp_camera_fb_get();
-    esp_camera_fb_return(fb);
     fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAGCAMERACLASS, "Camera capture failed");

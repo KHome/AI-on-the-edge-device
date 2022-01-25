@@ -236,13 +236,14 @@ bool CTfLiteClass::LoadModel(std::string _fn){
     this->error_reporter = new tflite::MicroErrorReporter;
 #endif
 
-    modelload = ReadFileToCharArray(_fn.c_str());
+    unsigned char *rd;
+    rd = ReadFileToCharArray(_fn.c_str());
 
-    if (modelload == NULL) 
+    if (rd == NULL) 
       return false;
 
-    model = tflite::GetModel(modelload);
-//    free(rd);
+    this->model = tflite::GetModel(rd);
+    free(rd);
     TFLITE_MINIMAL_CHECK(model != nullptr); 
     
     return true;
@@ -265,8 +266,6 @@ CTfLiteClass::~CTfLiteClass()
   delete this->tensor_arena;
   delete this->interpreter;
   delete this->error_reporter;
-  if (modelload)
-    free(modelload);
 }        
 
 

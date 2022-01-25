@@ -117,7 +117,6 @@ bool ClassFlowPostProcessing::LoadPreValue(void)
                     else
                     {
                         NUMBERS[j]->PreValueOkay = true;
-/*
                         NUMBERS[j]->Value = NUMBERS[j]->PreValue;
                         NUMBERS[j]->ReturnValue = to_string(NUMBERS[j]->Value);
                         NUMBERS[j]->ReturnValueNoError = NUMBERS[j]->ReturnValue; 
@@ -127,7 +126,6 @@ bool ClassFlowPostProcessing::LoadPreValue(void)
                             NUMBERS[j]->ReturnValue = RundeOutput(NUMBERS[j]->Value, NUMBERS[j]->Nachkomma + 1);  // SIcherheitshalber 1 Stelle mehr, da ggf. Exgtended Resolution an ist (wird erst beim ersten Durchlauf gesetzt)
                             NUMBERS[j]->ReturnValueNoError = NUMBERS[j]->ReturnValue;
                         }
-*/
                     }
 
                 }
@@ -658,12 +656,7 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
                 zwvalue = RundeOutput(NUMBERS[j]->Value, NUMBERS[j]->Nachkomma);
             }
 
-            double difference = difftime(imagetime, NUMBERS[j]->lastvalue);      // in Sekunden
-            difference /= 60;                                                    // in Minuten
-            NUMBERS[j]->FlowRateAct = (NUMBERS[j]->Value - NUMBERS[j]->PreValue) / difference;
-            NUMBERS[j]->ReturnRateValue = std::to_string(NUMBERS[j]->FlowRateAct);
-            
-            if (NUMBERS[j]->useMaxRateValue && (abs(NUMBERS[j]->FlowRateAct) > NUMBERS[j]->MaxRateValue))
+            if (NUMBERS[j]->useMaxRateValue && ((abs(NUMBERS[j]->Value - NUMBERS[j]->PreValue) > NUMBERS[j]->MaxRateValue)))
             {
                 NUMBERS[j]->ErrorMessageText = NUMBERS[j]->ErrorMessageText + "Rate too high - Read: " + RundeOutput(NUMBERS[j]->Value, NUMBERS[j]->Nachkomma) + " - Pre: " + RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma);
                 NUMBERS[j]->Value = NUMBERS[j]->PreValue;
@@ -675,23 +668,18 @@ bool ClassFlowPostProcessing::doFlow(string zwtime)
             if (NUMBERS[j]->ErrorMessage && (NUMBERS[j]->ErrorMessageText.length() > 0))
                 NUMBERS[j]->ReturnValue = NUMBERS[j]->ReturnValue + "\t" + NUMBERS[j]->ErrorMessageText;
 
+
+            double difference = difftime(imagetime, NUMBERS[j]->lastvalue);      // in Sekunden
+            difference /= 60;                                          // in Minuten
+            NUMBERS[j]->FlowRateAct = (NUMBERS[j]->Value - NUMBERS[j]->PreValue) / difference;
+            NUMBERS[j]->lastvalue = imagetime;
+
             if (NUMBERS[j]->ErrorMessageText.length() == 0)
             {
-                NUMBERS[j]->lastvalue = imagetime;
                 NUMBERS[j]->PreValue = NUMBERS[j]->Value;
-
-                NUMBERS[j]->ReturnValueNoError = NUMBERS[j]->ReturnValue;
                 NUMBERS[j]->ReturnPreValue = RundeOutput(NUMBERS[j]->PreValue, NUMBERS[j]->Nachkomma);
                 NUMBERS[j]->ErrorMessageText = "no error";
                 UpdatePreValueINI = true;
-            }
-            else
-            {
-                NUMBERS[j]->ReturnRateValue = "";
-                NUMBERS[j]->ReturnValue = "";
-                NUMBERS[j]->ReturnValueNoError = "";
-                NUMBERS[j]->timeStamp = "";
-                
             }
         }
         string _zw = "PostProcessing - Raw: " + NUMBERS[j]->ReturnRawValue + " Value: " + NUMBERS[j]->ReturnValue + " Error: " + NUMBERS[j]->ErrorMessageText;

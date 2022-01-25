@@ -17,14 +17,7 @@
 #include <sys/param.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include <dirent.h>
-#ifdef __cplusplus
-}
-#endif
 
 #include "esp_err.h"
 #include "esp_log.h"
@@ -64,52 +57,6 @@ struct file_server_data {
 };
 
 static const char *TAG_FILESERVER = "file_server";
-
-
-#include <iostream>
-#include <sys/types.h>
-#include <dirent.h>
-
-using namespace std;
-
-static esp_err_t get_tflite_file_handler(httpd_req_t *req){
-    DIR *verzeichnis;
-    struct dirent *files;
-
-    std::string _filename, _fileext, _result = "";
-    std::string _delimiter = ".";
-    size_t pos = 0;
-
-    verzeichnis=opendir("/sdcard/config");
-
-    printf("Suche TFLITE in /sdcard/config\n");
-
-    while((files = readdir(verzeichnis)))
-    {
-        _filename = files->d_name;
-        _fileext = _filename;
-        printf("File: %s\t", _filename.c_str());
-
-        while ((pos = _fileext.find(_delimiter))) {
-            _fileext.erase(0, pos + _delimiter.length());
-        }
-
-        printf(" Extension: %s\n", _fileext.c_str());
-
-        if ((_fileext == "tfl") || (_fileext == "tflite"))
-        {
-            _result = _result + _filename + "\t";
-        }
-    }
-    closedir(verzeichnis);
-
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "text/plain");
-    httpd_resp_sendstr_chunk(req, _result.c_str());
-    httpd_resp_sendstr_chunk(req, NULL);
-    return ESP_OK;
-}
-
 
 /* Handler to redirect incoming GET request for /index.html to /
  * This can be overridden by uploading file with same name */
@@ -850,15 +797,4 @@ void register_server_file_uri(httpd_handle_t server, const char *base_path)
     };
     httpd_register_uri_handler(server, &file_delete);
 
-
-    /* URI handler for getting tflite files from server */
-/*
-    httpd_uri_t file_tflite = {
-        .uri       = "/tflite",   // Match all URIs of type /delete/path/to/file
-        .method    = HTTP_GET,
-        .handler   = get_tflite_file_handler,
-        .user_ctx  = server_data    // Pass server data as context
-    };
-    httpd_register_uri_handler(server, &file_tflite);
-*/
 }
